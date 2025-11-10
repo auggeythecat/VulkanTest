@@ -2,6 +2,8 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+//#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
 
 #include <vector>
 #include <optional>
@@ -10,8 +12,9 @@
 class helloTriangle {
 public:
 
-	const uint32_t WIDTH = 800;
-	const uint32_t HEIGHT = 600;
+	float MAIN_SCALE = 1.0f;
+	uint32_t WIDTH  = static_cast<uint32_t>(1920 * MAIN_SCALE);
+	uint32_t HEIGHT = static_cast<uint32_t>(1080 * MAIN_SCALE);
 
 
 	const std::vector<char const*> validationLayers{
@@ -23,9 +26,9 @@ public:
 	};
 
 #ifndef NDEBUG
-	const bool enableValidationLayers = false;
-#else
 	const bool enableValidationLayers = true;
+#else
+	const bool enableValidationLayers = false;
 #endif // !NDEBUG
 
 	void run();
@@ -45,7 +48,7 @@ private:
 	};
 
 	struct mSwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
+		VkSurfaceCapabilitiesKHR capabilities{};
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
@@ -63,14 +66,16 @@ private:
 	};
 
 	void mainLoop();
-	void initWindow();
 	void initVulkan();
+	void initWindow();
 	void drawFrame();
 	void createInstance();
 	void setupDebugMessenger();
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+	void ImGuiWindowSetup();
+	void createImGuiPool();
 	void createSurface();
 	void createSwapChain();
 	void createImageViews();
@@ -80,6 +85,7 @@ private:
 	void createCommandPool();
 	void createCommandBuffer();
 	void createSyncObjects();
+	void createImGui();
 	void cleanUp();
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	mSwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
@@ -94,16 +100,16 @@ private:
 	void createLogicalDevice();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	VkExtent2D mSwapExtent;
-	VkFormat mSwapChainFormat;
 	VkDevice mDevice;
 	GLFWwindow* mWindow;
 	VkInstance mInstance;
 	VkSurfaceKHR mSurface;
 	VkQueue mPresentQueue;
 	VkQueue mGraphicsQueue;
+	VkExtent2D mSwapExtent;
 	size_t mCurrentFrame = 0;
 	VkRenderPass mRenderPass;
+	VkFormat mSwapChainFormat;
 	VkSwapchainKHR mSwapChain;
 	uint32_t mMemoryTypeIndex;
 	VkCommandPool mCommandPool;
@@ -112,6 +118,7 @@ private:
 	VkPhysicalDevice mPhysicalDevice;
 	VkPipelineLayout mPipelineLayout;
 	std::vector<VkFence> mInFlightFences;
+	VkDescriptorPool mImGuiDescriptorPool;
 	std::vector<VkImage> mSwapChainImages;
 	VkDebugUtilsMessengerEXT mDebugMessenger;
 	std::vector<VkFence> mImageInFlightFences;
@@ -121,4 +128,16 @@ private:
 	std::vector<VkSemaphore> mRenderFinishedSemaphores;
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
 	std::vector<VkSemaphore> mImageRenderFinishedSemaphores;
+
+	mFractalPushConstants mPushConstants = {
+		.ZoomLevel = 2.5,
+		.MaxIterations = 1000,
+		.PlaneMode = 0,
+		._padding0 = 0.0f,
+		.C_Const = { -0.75, 0.0 },
+		.Z0_Const = { 0.0, 0.0 },
+		.X_Const = { 2.0, 0.0 },
+		.ScreenCenter = { -0.75, 0.0 },
+		.ScreenSize = { (float) WIDTH, (float) HEIGHT }
+	};
 };

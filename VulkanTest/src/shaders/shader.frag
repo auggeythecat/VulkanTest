@@ -10,8 +10,6 @@ struct PSInput
 };
 
 
-
-
 float4 main(PSInput input) : SV_TARGET
 {
     
@@ -20,7 +18,7 @@ float4 main(PSInput input) : SV_TARGET
     
     Complex Varying_Param;
     
-    Varying_Param.Re = mapped_x * params.ZoomLevel * params.ScreenSize.x / params.ScreenSize.y + params.ScreenCenter.x;
+    Varying_Param.Re = mapped_x * params.ZoomLevel * (params.ScreenSize.x / params.ScreenSize.y) + params.ScreenCenter.x;
     Varying_Param.Im = mapped_y * params.ZoomLevel + params.ScreenCenter.y;
 
     
@@ -59,11 +57,12 @@ float4 main(PSInput input) : SV_TARGET
     }
 
     uint iterations = 0;
-    for (iterations; iterations < params.MaxIterations; iterations++)
+    for (uint i = 0; i < params.MaxIterations; i++)
     {
         float magnitude_sqr = Zn.Re * Zn.Re + Zn.Im * Zn.Im;
         if (magnitude_sqr > 4.0)
         {
+            iterations = i;
             break;
         }   
         
@@ -78,15 +77,16 @@ float4 main(PSInput input) : SV_TARGET
        
         Zn.Re += Cp.Re;
         Zn.Im += Cp.Im;
+        
     }
 
     if (iterations != params.MaxIterations)
     {
         
         float mu = float(iterations) + 1.0 - log(log(sqrt(Zn.Re * Zn.Re + Zn.Im * Zn.Im))) / log(Xp.Re * Xp.Re + Xp.Im * Xp.Im);
-        float r = 0.5 + 0.5 * cos(3.0 + mu * 0.15);
-        float g = 0.5 + 0.5 * tan(3.0 + mu * 0.15 + 2.0);
-        float b = 0.5 + 0.5 * sin(3.0 + mu * 0.15 + 4.0);
+        float r = 0.5 + 0.5 * sin(3.0 + mu * 0.15);
+        float g = 0.5 + 0.5 * cos(3.0 + mu * 0.15 + 2.0);
+        float b = 0.5 + 0.5 * cos(3.0 + mu * 0.15 + 4.0);
 
         return float4(r, g, b, 1.0);
     }

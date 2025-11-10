@@ -19,39 +19,78 @@
     <Filter Include="Source Files\cpp">
       <UniqueIdentifier>{9912c11d-4baf-4534-9f77-4d68568814d1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Shaders\frag">
-      <UniqueIdentifier>{9e9900b2-00bb-4350-ad13-06e2f7912e1e}</UniqueIdentifier>
+    <Filter Include="Header Files\imgui">
+      <UniqueIdentifier>{c8c8afb6-25d1-41d0-8bbb-a06f8774219c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\imgui">
+      <UniqueIdentifier>{bdb5fa45-378c-42eb-886c-14b357017d5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\imgui\backends">
+      <UniqueIdentifier>{5873d324-b309-4210-a6fa-f92c6908af45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\imgui\backends">
+      <UniqueIdentifier>{051edb00-799f-453c-83cc-d957a7499c3d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="imgui\imgui.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_draw.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_tables.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_widgets.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp">
+      <Filter>Source Files\imgui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\backends\imgui_impl_vulkan.cpp">
+      <Filter>Source Files\imgui\backends</Filter>
+    </ClCompile>
     <ClCompile Include="helloTriangle.cpp">
-      <Filter>Source Files\cpp</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Source Files\cpp</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileHelpers.cpp">
-      <Filter>Source Files\cpp</Filter>
+    <ClCompile Include="src\FileHelpers.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="helloTriangle.h">
+    <ClInclude Include="imgui\imconfig.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\backends\imgui_impl_vulkan.h">
+      <Filter>Header Files\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\backends\imgui_impl_glfw.h">
+      <Filter>Header Files\imgui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FileHelpers.h">
+    <ClInclude Include="src\helloTriangle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="shader.vert">
+    <CustomBuild Include="src\shaders\shader.vert">
       <Filter>Source Files\Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="shader.frag">
+    <CustomBuild Include="src\shaders\shader.frag">
       <Filter>Source Files\Shaders</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="complex_util.hlsl">
+    <None Include="src\shaders\complex_util.hlsl">
       <Filter>Source Files\Shaders</Filter>
     </None>
   </ItemGroup>

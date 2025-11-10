@@ -1,4 +1,4 @@
-#include "src/helloTriangle.h"
+#include "helloTriangle.h"
 
 #include <iostream>
 

@@ -1,6 +1,6 @@
-#include "src/helloTriangle.h"
+#include "helloTriangle.h"
 
-#include "src/FileHelpers.h"
+#include "FileHelpers.h"
 
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_glfw.h"
@@ -56,15 +56,9 @@ void helloTriangle::run() {
 }
 
 void helloTriangle::initWindow() {
-	if (!glfwInit()) {
-		throw std::runtime_error("failed to initialize GLFW");
-	}
+	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	
-	MAIN_SCALE = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
-	WIDTH = static_cast<uint32_t>(WIDTH * MAIN_SCALE);
-	HEIGHT = static_cast<uint32_t>(HEIGHT * MAIN_SCALE);
 
 	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 }
@@ -72,43 +66,10 @@ void helloTriangle::initWindow() {
 void helloTriangle::mainLoop() {
 	while (!glfwWindowShouldClose(mWindow)) {
 		glfwPollEvents();
-		int fbWidth, fbHeight;
-		glfwGetFramebufferSize(mWindow, &fbWidth, &fbHeight);
-		
-		if (glfwGetWindowAttrib(mWindow, GLFW_ICONIFIED) != 0)
-		{
-			ImGui_ImplGlfw_Sleep(10);
-			continue;
-		}
-
-		
-
 		drawFrame();
-
 	}
 
 	vkDeviceWaitIdle(mDevice);
-}
-
-void helloTriangle::ImGuiWindowSetup() {
-	ImGui_ImplVulkan_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
-	ImGui::SliderFloat("Zoom", &mPushConstants.ZoomLevel, 3.0f, 0.0001f);
-	ImGui::SliderInt("Max Iterations", (int*)&mPushConstants.MaxIterations, 10, 10000);
-	ImGui::DragFloat2("Screen Center", (float*)&mPushConstants.ScreenCenter, 0.001f);
-	ImGui::DragFloat2("C_Const", (float*)&mPushConstants.C_Const, 0.001f);
-	ImGui::DragFloat2("Z0_Const", (float*)&mPushConstants.Z0_Const, 0.001f);
-	ImGui::DragFloat2("X_Const", (float*)&mPushConstants.X_Const, 0.001f);
-
-	const char* modes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
-	ImGui::Combo("Plane Mode", (int*)&mPushConstants.PlaneMode, modes, 3);
-
-	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-	ImGui::EndFrame();
-	ImGui::Render();
 }
 
 void helloTriangle::drawFrame() {
@@ -116,8 +77,6 @@ void helloTriangle::drawFrame() {
 	VkCommandBuffer currentCommandBuffer = mCommandBuffers[mCurrentFrame];
 
 	vkWaitForFences(mDevice, 1, &mInFlightFences[mCurrentFrame], VK_TRUE, UINT64_MAX);
-
-	ImGuiWindowSetup();
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -181,10 +140,6 @@ void helloTriangle::cleanUp() {
 	vkDestroySemaphore(mDevice, mImageRenderFinishedSemaphores[i], nullptr);
 	vkDestroyFence(mDevice, mImageInFlightFences[i], nullptr);
 	}
-	ImGui_ImplVulkan_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-	vkDestroyDescriptorPool(mDevice, mImGuiDescriptorPool, nullptr);
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 	for (auto framebuffer : mSwapChainFramebuffers) { vkDestroyFramebuffer(mDevice, framebuffer, nullptr); }
 	vkDestroyPipeline(mDevice, mGraphicsPipeline, nullptr);
@@ -219,7 +174,6 @@ void helloTriangle::initVulkan() {
 }
 
 void helloTriangle::createImGui() {
-
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 
@@ -228,26 +182,8 @@ void helloTriangle::createImGui() {
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.ScaleAllSizes(MAIN_SCALE);
-	style.FontScaleDpi = MAIN_SCALE;
 
 	ImGui_ImplGlfw_InitForVulkan(mWindow, true);
-	
-	ImGui_ImplVulkan_InitInfo initInfo{};
-	initInfo.Instance = mInstance;
-	initInfo.PhysicalDevice = mPhysicalDevice;
-	initInfo.Device = mDevice;
-	initInfo.QueueFamily = findQueueFamilies(mPhysicalDevice).graphicsFamily.value();
-	initInfo.Queue = mGraphicsQueue;
-	initInfo.DescriptorPool = mImGuiDescriptorPool;
-	initInfo.MinImageCount = mSwapChainImages.size();
-	initInfo.ImageCount = mSwapChainImages.size();
-	initInfo.PipelineInfoMain.RenderPass = mRenderPass;
-	initInfo.PipelineInfoMain.Subpass = 0;
-	initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-	ImGui_ImplVulkan_Init(&initInfo);
-
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 }
 
 void helloTriangle::createImGuiPool() {
@@ -636,8 +572,10 @@ void helloTriangle::createCommandBuffer() {
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = mMaxFlightFrames;
 	
-	if (vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffer!");
+	for (size_t i = 0; i < mMaxFlightFrames; i++) {
+		if (vkAllocateCommandBuffers(mDevice, &allocInfo, &mCommandBuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffer!");
+		}
 	}
 }
 
@@ -681,7 +619,7 @@ void helloTriangle::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 	beginInfo.flags                  = 0;
 	beginInfo.pInheritanceInfo       = nullptr;
 
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+	if (vkBeginCommandBuffer(mCommandBuffers[mCurrentFrame], &beginInfo) != VK_SUCCESS) {
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
@@ -701,6 +639,18 @@ void helloTriangle::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mGraphicsPipeline);
 
+	mFractalPushConstants params{};
+	params.ZoomLevel     = 2.5;
+	params.MaxIterations = 1000;
+	params.PlaneMode     = 0;
+	params._padding0     = 0.0f;
+	params.C_Const       = { -0.75, 0.0 };
+	params.Z0_Const      = { 0.0, 0.0 };
+	params.X_Const       = { 2.0, 0.0 };
+	params.ScreenCenter  = { -0.75, 0.0 };
+	params.ScreenSize    = { 800.0, 600.0 };
+
+	vkCmdPushConstants(commandBuffer, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(mFractalPushConstants), &params);
 
 	VkViewport viewport{};
 	viewport.x                       = 0.0f;
@@ -718,12 +668,7 @@ void helloTriangle::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdPushConstants(commandBuffer, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(mFractalPushConstants), &mPushConstants);
-
-
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 	
 	vkCmdEndRenderPass(commandBuffer);
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
