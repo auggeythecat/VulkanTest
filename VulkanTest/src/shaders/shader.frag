@@ -111,6 +111,12 @@ float4 main(PSInput input) : SV_TARGET
             float3 rgb = hsv_to_rgb(float3(hue, sat, val));
             return float4(rgb, 1.0);
         }
+        else if (params.colorMode == 2)
+        {
+            float t = frac(mu * params.colorScaler);
+            float3 rgb = palette_lerp(t);
+            return float4(rgb, 1.0);
+        }
         else
         {
             return (1.0, 1.0, 1.0, 1.0);

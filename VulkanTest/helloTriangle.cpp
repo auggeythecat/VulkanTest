@@ -108,8 +108,8 @@ void helloTriangle::ImGuiWindowSetup() {
 	const char* PlaneModes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
 	ImGui::Combo("Plane Mode", (int*)&mPushConstants.PlaneMode, PlaneModes, 3);
 
-	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation"};
-	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 2);
+	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation", "Pallete lerp"};
+	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 3);
 
 	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.01f);
 

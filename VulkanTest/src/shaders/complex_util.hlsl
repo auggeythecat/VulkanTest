@@ -56,3 +56,22 @@ float3 hsv_to_rgb(float3 c)
     float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
+
+float3 palette_lerp(float t)
+{
+    const float3 colors[3] =
+    {
+        float3(0.9882352941, 0.6901960784, 0.9529411765),
+        float3(0.2392156863, 0.0196078431, 0.8666666667),
+        float3(0.2784313725, 0.0627450980, 0.4117647059)
+    };
+    
+    float scaled_t = t * (5.0 - 1.0);
+    
+    int index_a = (int) scaled_t;
+    int index_b = min(index_a + 1, 2);
+    
+    float blend_t = frac(scaled_t);
+    
+    return lerp(colors[index_a], colors[index_b], blend_t);
+}
