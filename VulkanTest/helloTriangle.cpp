@@ -91,6 +91,9 @@ void helloTriangle::mainLoop() {
 }
 
 void helloTriangle::ImGuiWindowSetup() {
+	bool cosineInterpolation = mPushConstants.ColorMode == 0;
+
+
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -102,8 +105,13 @@ void helloTriangle::ImGuiWindowSetup() {
 	ImGui::DragFloat2("Z0_Const", (float*)&mPushConstants.Z0_Const, 0.001f);
 	ImGui::DragFloat2("X_Const", (float*)&mPushConstants.X_Const, 0.001f);
 
-	const char* modes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
-	ImGui::Combo("Plane Mode", (int*)&mPushConstants.PlaneMode, modes, 3);
+	const char* PlaneModes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
+	ImGui::Combo("Plane Mode", (int*)&mPushConstants.PlaneMode, PlaneModes, 3);
+
+	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation"};
+	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 2);
+
+	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.01f);
 
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 

@@ -56,15 +56,20 @@ float4 main(PSInput input) : SV_TARGET
         return float4(1.0, 1.0, 1.0, 1.0);
     }
 
+    if (Zn.Re == 0.0 && Zn.Im == 0.0)
+    {
+        Zn.Re = 0.000001f;
+    }
+    
     uint iterations = 0;
     for (uint i = 0; i < params.MaxIterations; i++)
     {
         float magnitude_sqr = Zn.Re * Zn.Re + Zn.Im * Zn.Im;
-        if (magnitude_sqr > 4.0)
+        if (magnitude_sqr > 25.0)
         {
             iterations = i;
             break;
-        }   
+        }
         
         if (Xp.Re == 2 && Xp.Im == 0)
         {
@@ -82,13 +87,35 @@ float4 main(PSInput input) : SV_TARGET
 
     if (iterations != params.MaxIterations)
     {
+        float mag_Z = sqrt(Zn.Re * Zn.Re + Zn.Im * Zn.Im);
+        float mag_X_sqr = Xp.Re * Xp.Re + Xp.Im * Xp.Im;
+		
+        float mu = float(iterations) + 1.0 - log(log(mag_Z)) / log(sqrt(max(0.000001f, mag_X_sqr)));
         
-        float mu = float(iterations) + 1.0 - log(log(sqrt(Zn.Re * Zn.Re + Zn.Im * Zn.Im))) / log(Xp.Re * Xp.Re + Xp.Im * Xp.Im);
-        float r = 0.5 + 0.5 * sin(3.0 + mu * 0.15);
-        float g = 0.5 + 0.5 * cos(3.0 + mu * 0.15 + 2.0);
-        float b = 0.5 + 0.5 * cos(3.0 + mu * 0.15 + 4.0);
+        
+        if (params.colorMode == 0)
+        {
+        
+            float r = 0.5 + 0.5 * cos(mu * params.colorScaler + 0.0);
+            float g = 0.5 + 0.5 * cos(mu * params.colorScaler + 2.0);
+            float b = 0.5 + 0.5 * cos(mu * params.colorScaler + 4.0);
 
-        return float4(r, g, b, 1.0);
+            return float4(r, g, b, 1.0);
+        }
+        else if (params.colorMode == 1)
+        {
+            float hue = frac(mu * params.colorScaler);
+            float sat = 1.0;
+            float val = 1.0;
+
+            float3 rgb = hsv_to_rgb(float3(hue, sat, val));
+            return float4(rgb, 1.0);
+        }
+        else
+        {
+            return (1.0, 1.0, 1.0, 1.0);
+        }
+
     }
-    return float4(0.0, 0.0, 0.0, 0.0);
+    return float4(0.0, 0.0, 0.0, 1.0);
 }

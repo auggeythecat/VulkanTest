@@ -5,6 +5,8 @@ struct PushConstants
     float ZoomLevel;
     uint MaxIterations;
     uint PlaneMode;
+    uint colorMode;
+    float colorScaler;
     float _padding0;
     float2 C_Const;
     float2 Z0_Const;
@@ -48,4 +50,9 @@ Complex complex_exp(Complex z, Complex x)
     return result;
 }
 
-
+float3 hsv_to_rgb(float3 c)
+{
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
