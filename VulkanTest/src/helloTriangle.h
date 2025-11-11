@@ -125,7 +125,6 @@ private:
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	std::vector<VkImageView> mSwapChainImageViews;
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;
-	std::vector<VkSemaphore> mRenderFinishedSemaphores;
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
 	std::vector<VkSemaphore> mImageRenderFinishedSemaphores;
 
