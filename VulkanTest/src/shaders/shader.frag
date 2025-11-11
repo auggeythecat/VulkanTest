@@ -61,7 +61,7 @@ float4 main(PSInput input) : SV_TARGET
         Zn.Re = 0.000001f;
     }
     
-    uint iterations = 0;
+    uint iterations = params.MaxIterations;
     for (uint i = 0; i < params.MaxIterations; i++)
     {
         float magnitude_sqr = Zn.Re * Zn.Re + Zn.Im * Zn.Im;

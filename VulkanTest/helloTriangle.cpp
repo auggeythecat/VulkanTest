@@ -67,6 +67,64 @@ void helloTriangle::initWindow() {
 	HEIGHT = static_cast<uint32_t>(HEIGHT * MAIN_SCALE);
 
 	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
+	glfwSetWindowUserPointer(mWindow, this);
+	glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int mods) {
+		auto app = static_cast<helloTriangle*>(glfwGetWindowUserPointer(window));
+		app->onMouseButton(button, action, mods);
+	});
+
+	glfwSetCursorPosCallback(mWindow, [](GLFWwindow* window, double xpos, double ypos) {
+		auto app = static_cast<helloTriangle*>(glfwGetWindowUserPointer(window));
+		app->onMouseMove(xpos, ypos);
+	});
+
+	glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset) {
+		auto app = static_cast<helloTriangle*>(glfwGetWindowUserPointer(window));
+		app->onMouseScroll(xoffset, yoffset);
+	});
+}
+
+void helloTriangle::onMouseButton(int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		if (action == GLFW_PRESS) {
+			mIsDragging = true;
+			glfwGetCursorPos(mWindow, &mLastMouseX, &mLastMouseY);
+		} else if (action == GLFW_RELEASE) {
+			mIsDragging = false;
+		}
+	}
+}
+
+void helloTriangle::onMouseMove(double xpos, double ypos) {
+	if (!mIsDragging) {
+		return;
+	}
+
+	double deltaX = xpos - mLastMouseX;
+	double deltaY = ypos - mLastMouseY;
+
+	double complexWidth = 2.0f * mPushConstants.ZoomLevel * (mPushConstants.ScreenSize.x / mPushConstants.ScreenSize.y);
+	double complexHeight = 2.0f * mPushConstants.ZoomLevel;
+
+	double unitsPerPixelX = complexWidth / mPushConstants.ScreenSize.x;
+	double unitsPerPixelY = complexHeight / mPushConstants.ScreenSize.y;
+
+	mPushConstants.ScreenCenter.x -= deltaX * unitsPerPixelX;
+	mPushConstants.ScreenCenter.y -= deltaY * unitsPerPixelY;
+
+	mLastMouseX = xpos;
+	mLastMouseY = ypos;
+}
+
+void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
+	double zoomFactor = 1.1;
+	if (yoffset > 0) {
+		mPushConstants.ZoomLevel /= zoomFactor;
+	}
+	else if (yoffset < 0) {
+		mPushConstants.ZoomLevel *= zoomFactor;
+	}
 }
 
 void helloTriangle::mainLoop() {
@@ -111,7 +169,7 @@ void helloTriangle::ImGuiWindowSetup() {
 	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation", "Pallete lerp"};
 	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 3);
 
-	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.01f);
+	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.001f, "%1.5f", ImGuiSliderFlags_Logarithmic);
 
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 

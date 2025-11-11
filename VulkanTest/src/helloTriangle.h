@@ -70,6 +70,9 @@ private:
 	void mainLoop();
 	void initVulkan();
 	void initWindow();
+	void onMouseButton(int button, int action, int mods);
+	void onMouseMove(double xpos, double ypos);
+	void onMouseScroll(double xoffset, double yoffset);
 	void drawFrame();
 	void createInstance();
 	void setupDebugMessenger();
@@ -101,6 +104,11 @@ private:
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	void createLogicalDevice();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	bool mIsDragging = false;
+	double mLastMouseX = 0.0;
+	double mLastMouseY = 0.0;
+
 
 	VkDevice mDevice;
 	GLFWwindow* mWindow;
