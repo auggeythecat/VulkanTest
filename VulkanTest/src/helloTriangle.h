@@ -121,7 +121,6 @@ private:
 	VkDescriptorPool mImGuiDescriptorPool;
 	std::vector<VkImage> mSwapChainImages;
 	VkDebugUtilsMessengerEXT mDebugMessenger;
-	std::vector<VkFence> mImageInFlightFences;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 	std::vector<VkImageView> mSwapChainImageViews;
 	std::vector<VkFramebuffer> mSwapChainFramebuffers;

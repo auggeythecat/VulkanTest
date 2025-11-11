@@ -121,11 +121,6 @@ void helloTriangle::drawFrame() {
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
-	
-	if (mImageInFlightFences[imageIndex] != VK_NULL_HANDLE) {
-		vkWaitForFences(mDevice, 1, &mImageInFlightFences[imageIndex], VK_TRUE, UINT64_MAX);
-	}
-	mImageInFlightFences[imageIndex] = mInFlightFences[mCurrentFrame];
 
 	vkResetFences(mDevice, 1, &mInFlightFences[mCurrentFrame]);
 	
@@ -179,7 +174,6 @@ void helloTriangle::cleanUp() {
 	}
 	for (size_t i = 0; i < mSwapChainImages.size(); i++) {
 	vkDestroySemaphore(mDevice, mImageRenderFinishedSemaphores[i], nullptr);
-	//vkDestroyFence(mDevice, mImageInFlightFences[i], nullptr);
 	}
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -645,7 +639,6 @@ void helloTriangle::createSyncObjects() {
 	mInFlightFences.resize(mMaxFlightFrames);
 	mImageAvailableSemaphores.resize(mMaxFlightFrames);
 	mImageRenderFinishedSemaphores.resize(mSwapChainImages.size());
-	mImageInFlightFences.resize(mSwapChainImages.size());
 
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -656,8 +649,7 @@ void helloTriangle::createSyncObjects() {
 
 
 	for (size_t i = 0; i < mSwapChainImages.size(); i++) {
-		if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mImageRenderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(mDevice, &fenceInfo, nullptr, &mImageInFlightFences[i]) != VK_SUCCESS) {
+		if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mImageRenderFinishedSemaphores[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image semaphores!");
 		}
 	}
