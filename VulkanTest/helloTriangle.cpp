@@ -66,7 +66,7 @@ void helloTriangle::initWindow() {
 	WIDTH = static_cast<uint32_t>(WIDTH * MAIN_SCALE);
 	HEIGHT = static_cast<uint32_t>(HEIGHT * MAIN_SCALE);
 
-	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "Fractal garbage", nullptr, nullptr);
 
 	glfwSetWindowUserPointer(mWindow, this);
 	glfwSetMouseButtonCallback(mWindow, [](GLFWwindow* window, int button, int action, int mods) {
