@@ -79,24 +79,30 @@ void helloTriangle::initWindow() {
 		app->onMouseMove(xpos, ypos);
 	});
 
-	glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset) {
+	glfwSetScrollCallback(mWindow, [](GLFWwindow* window, double xoffset, double yoffset) {		
 		auto app = static_cast<helloTriangle*>(glfwGetWindowUserPointer(window));
 		app->onMouseScroll(xoffset, yoffset);
 	});
 }
 
 void helloTriangle::onMouseButton(int button, int action, int mods) {
-	if (button == GLFW_MOUSE_BUTTON_LEFT) {
-		if (action == GLFW_PRESS) {
-			mIsDragging = true;
-			glfwGetCursorPos(mWindow, &mLastMouseX, &mLastMouseY);
-		} else if (action == GLFW_RELEASE) {
+	if (ImGui::GetIO().WantCaptureMouse) {
+		return;
+	}
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+		mIsDragging = true;
+		glfwGetCursorPos(mWindow, &mLastMouseX, &mLastMouseY);
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 			mIsDragging = false;
-		}
 	}
 }
 
 void helloTriangle::onMouseMove(double xpos, double ypos) {
+	if (ImGui::GetIO().WantCaptureMouse) {
+		mIsDragging = false;
+	}
+	
 	if (!mIsDragging) {
 		return;
 	}
@@ -118,13 +124,35 @@ void helloTriangle::onMouseMove(double xpos, double ypos) {
 }
 
 void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
-	double zoomFactor = 1.1;
+	
+	double xpos, ypos;
+
+	glfwGetCursorPos(mWindow, &xpos, &ypos);
+
+	float oldZoom = mPushConstants.ZoomLevel;
+
+	float zoomFactor = 1.1;
+	
+	
 	if (yoffset > 0) {
 		mPushConstants.ZoomLevel /= zoomFactor;
 	}
 	else if (yoffset < 0) {
 		mPushConstants.ZoomLevel *= zoomFactor;
 	}
+
+	float newZoom = mPushConstants.ZoomLevel;
+
+
+	float x_norm = (float)(      (xpos /  WIDTH) * 2.0 - 1.0);
+	float y_norm = (float)(      (ypos / HEIGHT) * 2.0 - 1.0);
+
+	float aspectRatio = (float)WIDTH / (float)HEIGHT;
+
+	float deltaZoom = oldZoom - newZoom;
+
+	mPushConstants.ScreenCenter.x += x_norm * deltaZoom * aspectRatio;
+	mPushConstants.ScreenCenter.y += y_norm * deltaZoom;
 }
 
 void helloTriangle::mainLoop() {
