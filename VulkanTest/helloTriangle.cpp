@@ -169,6 +169,9 @@ void helloTriangle::ImGuiWindowSetup() {
 	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation", "Pallete lerp"};
 	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 3);
 
+	const char* FractalType[] = { "Mandlebrot", "Mandlebar", "BurningShip" };
+	ImGui::Combo("Fractal", (int*)&mPushConstants.FractalType, FractalType, 3);
+
 	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.001f, "%1.5f", ImGuiSliderFlags_Logarithmic);
 
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

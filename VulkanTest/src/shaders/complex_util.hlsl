@@ -2,12 +2,12 @@
 
 struct PushConstants
 {
-    float ZoomLevel;
     uint MaxIterations;
     uint PlaneMode;
     uint colorMode;
+    uint fractalType;
+    float ZoomLevel;
     float colorScaler;
-    float _padding0;
     float2 C_Const;
     float2 Z0_Const;
     float2 X_Const;

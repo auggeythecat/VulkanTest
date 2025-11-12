@@ -54,12 +54,12 @@ private:
 	};
 
 	struct mFractalPushConstants {
-		float ZoomLevel;
 		uint32_t MaxIterations;
 		uint32_t PlaneMode;
 		uint32_t ColorMode;
+		uint32_t FractalType;
+		float ZoomLevel;
 		float colorScaler;
-		float _padding0;
 		Vec2 C_Const;
 		Vec2 Z0_Const;
 		Vec2 X_Const;
@@ -138,12 +138,12 @@ private:
 	std::vector<VkSemaphore> mImageRenderFinishedSemaphores;
 
 	mFractalPushConstants mPushConstants = {
-		.ZoomLevel = 2.5,
 		.MaxIterations = 1000,
 		.PlaneMode = 0,
 		.ColorMode = 1,
+		.FractalType = 0,
+		.ZoomLevel = 2.5f,
 		.colorScaler = 0.03f,
-		._padding0 = 0.0f,
 		.C_Const = { -0.75, 0.0 },
 		.Z0_Const = { 0.0, 0.0 },
 		.X_Const = { 2.0, 0.0 },
