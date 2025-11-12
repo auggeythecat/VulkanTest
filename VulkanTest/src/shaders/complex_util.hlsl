@@ -50,6 +50,19 @@ Complex complex_exp(Complex z, Complex x)
     return result;
 }
 
+float3 catmull_rom(float3 p0, float3 p1, float3 p2, float3 p3, float t)
+{
+    float t2 = t * t;
+    float t3 = t2 * t;
+    
+    float3 C0 = p1;
+    float3 C1 = 0.5 * (p2 - p0);
+    float3 C2 = 0.5 * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3);
+    float3 C3 = 0.5 * (-p0 + 3.0 * p1 - 3.0 * p2 + p3);
+    
+    return C0 + C1 * t + C2 * t2 + C3 * t3;
+}
+
 float3 hsv_to_rgb(float3 c)
 {
     float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -59,19 +72,29 @@ float3 hsv_to_rgb(float3 c)
 
 float3 palette_lerp(float t)
 {
-    const float3 colors[3] =
+    uint colorNum = 4;
+    const float3 colors[4] =
     {
-        float3(0.9882352941, 0.6901960784, 0.9529411765),
-        float3(0.2392156863, 0.0196078431, 0.8666666667),
-        float3(0.2784313725, 0.0627450980, 0.4117647059)
+        float3(0.5607843137, 0.1372549020, 0.9843137255),
+        float3(0.5921568627, 0.2784313725, 0.7607843137),
+        float3(0.1882352941, 0.0666666667, 0.2352941176),
+        float3(0.0666666667, 0.0196078431, 0.1019607843)
     };
     
-    float scaled_t = t * (5.0 - 1.0);
+    t = t + 0.05;
     
-    int index_a = (int) scaled_t;
-    int index_b = min(index_a + 1, 2);
+    float scaled_t = t * (colorNum - 1.0);
+    uint p1 = floor(scaled_t);
+    uint p2 = min(p1 + 1, colorNum - 1);
+    uint p0 = max(0, p1 - 1);
+    uint p3 = min(p1 + 2, colorNum - 1);
     
-    float blend_t = frac(scaled_t);
+    t = frac(scaled_t);
     
-    return lerp(colors[index_a], colors[index_b], blend_t);
+    
+    float3 interpolatedColor = catmull_rom(colors[p0], colors[p1], colors[p2], colors[p3], scaled_t);
+    
+    return float4(interpolatedColor, 1.0);
+    
 }
+

@@ -1,3 +1,6 @@
+#include "complex_util.hlsl"
+
+
 struct VSInput
 {
     uint vertexID : SV_VertexID;
