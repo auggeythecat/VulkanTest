@@ -64,8 +64,8 @@ float4 main(PSInput input) : SV_TARGET
     uint iterations = params.MaxIterations;
     for (uint i = 0; i < params.MaxIterations; i++)
     {
-        float magnitude_sqr = Zn.Re * Zn.Re + Zn.Im * Zn.Im;
-        if (magnitude_sqr > 20.0)
+        
+        if ((Zn.Re * Zn.Re + Zn.Im * Zn.Im) > 4.0)
         {
             iterations = i;
             break;

@@ -33,7 +33,7 @@ Complex complex_mul(Complex a, Complex b)
 Complex complex_exp(Complex z, Complex x)
 {
     float r_sqr = z.Re * z.Re + z.Im * z.Im;
- 
+    
     if (r_sqr < 1e-10)
     {
         r_sqr = 1e-10;
@@ -45,10 +45,9 @@ Complex complex_exp(Complex z, Complex x)
     Complex logZ;
     logZ.Re = log(mag);
     logZ.Im = arg;
-
     Complex w = complex_mul(x, logZ);
     
-    float exp_w_re = exp(w.Re);
+    float exp_w_re = exp(clamp(w.Re, -20.0, 20.0));    
     
     Complex result;
     result.Re = exp_w_re * cos(w.Im);
