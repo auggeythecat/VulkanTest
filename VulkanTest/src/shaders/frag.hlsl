@@ -70,9 +70,28 @@ float4 main(PSInput input) : SV_TARGET
             iterations = i;
             break;
         }
-        if (!params.PlaneMode == 2)
+        if (params.PlaneMode != 2)
         {
-        if (Xp.Re == 2 && Xp.Im == 0)
+            if (params.fractalType == 0)
+            {
+                Zn = complex_exp(Zn, Xp);
+            }
+            else if (params.fractalType == 1)
+            {
+                Zn.Im = -Zn.Im;
+                Zn = complex_exp(Zn, Xp);
+            }
+            else if (params.fractalType == 2)
+            {
+                Complex Zn_abs;
+                Zn_abs.Re = abs(Zn.Re);
+                Zn_abs.Im = abs(Zn.Im);
+                Zn = complex_exp(Zn_abs, Xp);
+            }
+        }
+        else
+        {
+            if (Xp.Re == 2 && Xp.Im == 0)
             {
                 if (params.fractalType == 0)
                 {
@@ -90,25 +109,6 @@ float4 main(PSInput input) : SV_TARGET
                     Zn_abs.Im = abs(Zn.Im);
                     Zn = complex_mul(Zn_abs, Zn_abs);
                 }
-            }
-        }
-        else
-        {
-            if (params.fractalType == 0)
-            {
-                Zn = complex_exp(Zn, Xp);
-            }
-            else if (params.fractalType == 1)
-            {
-                Zn.Im = -Zn.Im;
-                Zn = complex_exp(Zn, Xp);
-            }
-            else if (params.fractalType == 2)
-            {
-                Complex Zn_abs;
-                Zn_abs.Re = abs(Zn.Re);
-                Zn_abs.Im = abs(Zn.Im);
-                Zn = complex_exp(Zn_abs, Xp);
             }
         }
        

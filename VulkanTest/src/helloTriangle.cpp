@@ -564,8 +564,8 @@ void helloTriangle::createRenderPass() {
 }
 
 void helloTriangle::createGraphicsPipeline() {
-	auto vertShaderCode                             = FileHelpers::readFile("shaders/shader.vert.spv");
-	auto fragShaderCode                             = FileHelpers::readFile("shaders/shader.frag.spv");
+	auto vertShaderCode                             = FileHelpers::readFile("shaders/vert.spv");
+	auto fragShaderCode                             = FileHelpers::readFile("shaders/frag.spv");
 
 	VkShaderModule vertShaderModule                 = createShaderModule(vertShaderCode);
 	VkShaderModule fragShaderModule                 = createShaderModule(fragShaderCode);

@@ -82,10 +82,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="src\shaders\shader.vert">
+    <CustomBuild Include="src\shaders\vert.hlsl">
       <Filter>Source Files\Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="src\shaders\shader.frag">
+    <CustomBuild Include="src\shaders\frag.hlsl">
       <Filter>Source Files\Shaders</Filter>
     </CustomBuild>
   </ItemGroup>

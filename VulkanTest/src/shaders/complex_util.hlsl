@@ -33,6 +33,12 @@ Complex complex_mul(Complex a, Complex b)
 Complex complex_exp(Complex z, Complex x)
 {
     float r_sqr = z.Re * z.Re + z.Im * z.Im;
+ 
+    if (r_sqr < 1e-10)
+    {
+        r_sqr = 1e-10;
+    }
+    
     float mag = sqrt(r_sqr);
     float arg = atan2(z.Im, z.Re);
     
