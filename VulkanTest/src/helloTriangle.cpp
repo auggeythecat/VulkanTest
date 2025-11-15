@@ -1,5 +1,6 @@
 #include "helloTriangle.h"
 
+#include "doubleFloatMath.h"
 #include "FileHelpers.h"
 
 #include "../imgui/imgui.h"
@@ -110,14 +111,14 @@ void helloTriangle::onMouseMove(double xpos, double ypos) {
 	double deltaX = xpos - mLastMouseX;
 	double deltaY = ypos - mLastMouseY;
 
-	double complexWidth = 2.0f * mPushConstants.ZoomLevel * (mPushConstants.ScreenSize.x / mPushConstants.ScreenSize.y);
-	double complexHeight = 2.0f * mPushConstants.ZoomLevel;
+	double complexWidth = 2.0f * mUniformConstants.ZoomLevel * (mUniformConstants.ScreenSizeX / mUniformConstants.ScreenSizeY);
+	double complexHeight = 2.0f * mUniformConstants.ZoomLevel;
 
-	double unitsPerPixelX = complexWidth / mPushConstants.ScreenSize.x;
-	double unitsPerPixelY = complexHeight / mPushConstants.ScreenSize.y;
+	double unitsPerPixelX = complexWidth / mUniformConstants.ScreenSizeX;
+	double unitsPerPixelY = complexHeight / mUniformConstants.ScreenSizeY;
 
-	mPushConstants.ScreenCenter.x -= deltaX * unitsPerPixelX;
-	mPushConstants.ScreenCenter.y -= deltaY * unitsPerPixelY;
+	mUniformConstants.ScreenCenter.Re = df_add(mUniformConstants.ScreenCenter.Re, df_from_float(-deltaX * unitsPerPixelX));
+	mUniformConstants.ScreenCenter.Im = df_add(mUniformConstants.ScreenCenter.Im, df_from_float(-deltaY * unitsPerPixelY));
 
 	mLastMouseX = xpos;
 	mLastMouseY = ypos;
@@ -129,19 +130,19 @@ void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
 
 	glfwGetCursorPos(mWindow, &xpos, &ypos);
 
-	float oldZoom = mPushConstants.ZoomLevel;
+	float oldZoom = mUniformConstants.ZoomLevel;
 
 	float zoomFactor = 1.1;
 	
 	
 	if (yoffset > 0) {
-		mPushConstants.ZoomLevel /= zoomFactor;
+		mUniformConstants.ZoomLevel /= zoomFactor;
 	}
 	else if (yoffset < 0) {
-		mPushConstants.ZoomLevel *= zoomFactor;
+		mUniformConstants.ZoomLevel *= zoomFactor;
 	}
 
-	float newZoom = mPushConstants.ZoomLevel;
+	float newZoom = mUniformConstants.ZoomLevel;
 
 
 	float x_norm = (float)(      (xpos /  WIDTH) * 2.0 - 1.0);
@@ -151,8 +152,8 @@ void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
 
 	float deltaZoom = oldZoom - newZoom;
 
-	mPushConstants.ScreenCenter.x += x_norm * deltaZoom * aspectRatio;
-	mPushConstants.ScreenCenter.y += y_norm * deltaZoom;
+	mUniformConstants.ScreenCenter.Re = df_add(mUniformConstants.ScreenCenter.Re, df_from_float(x_norm * deltaZoom * aspectRatio));
+	mUniformConstants.ScreenCenter.Im = df_add(mUniformConstants.ScreenCenter.Im, df_from_float(y_norm * deltaZoom));
 }
 
 void helloTriangle::mainLoop() {
@@ -177,30 +178,30 @@ void helloTriangle::mainLoop() {
 }
 
 void helloTriangle::ImGuiWindowSetup() {
-	bool cosineInterpolation = mPushConstants.ColorMode == 0;
+	bool cosineInterpolation = mUniformConstants.ColorMode == 0;
 
 
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::SliderFloat("Zoom", &mPushConstants.ZoomLevel, 3.0f, 0.0001f);
-	ImGui::SliderInt("Max Iterations", (int*)&mPushConstants.MaxIterations, 10, 2500);
-	ImGui::DragFloat2("Screen Center", (float*)&mPushConstants.ScreenCenter, 0.001f);
-	ImGui::DragFloat2("C_Const", (float*)&mPushConstants.C_Const, 0.001f);
-	ImGui::DragFloat2("Z0_Const", (float*)&mPushConstants.Z0_Const, 0.001f);
-	ImGui::DragFloat2("X_Const", (float*)&mPushConstants.X_Const, 0.001f);
+	ImGui::SliderFloat("Zoom", &mUniformConstants.ZoomLevel, 3.0f, 0.0001f);
+	ImGui::SliderInt("Max Iterations", (int*)&mUniformConstants.MaxIterations, 10, 2500);
+	ImGui::DragFloat2("Screen Center", (float*)&mUniformConstants.ScreenCenter, 0.001f);
+	ImGui::DragFloat2("C_Const", (float*)&mUniformConstants.C_Const, 0.001f);
+	ImGui::DragFloat2("Z0_Const", (float*)&mUniformConstants.Z0_Const, 0.001f);
+	ImGui::DragFloat2("X_Const", (float*)&mUniformConstants.X_Const, 0.001f);
 
 	const char* PlaneModes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
-	ImGui::Combo("Plane Mode", (int*)&mPushConstants.PlaneMode, PlaneModes, 3);
+	ImGui::Combo("Plane Mode", (int*)&mUniformConstants.PlaneMode, PlaneModes, 3);
 
 	const char* ColorModes[] = { "Cosine interpolation", "HSV interpolation", "Pallete lerp"};
-	ImGui::Combo("Color Mode", (int*)&mPushConstants.ColorMode, ColorModes, 3);
+	ImGui::Combo("Color Mode", (int*)&mUniformConstants.ColorMode, ColorModes, 3);
 
 	const char* FractalType[] = { "Mandlebrot", "Mandlebar", "BurningShip" };
-	ImGui::Combo("Fractal", (int*)&mPushConstants.FractalType, FractalType, 3);
+	ImGui::Combo("Fractal", (int*)&mUniformConstants.FractalType, FractalType, 3);
 
-	ImGui::SliderFloat("ColorScaler", &mPushConstants.colorScaler, 0.1f, 0.001f, "%1.5f", ImGuiSliderFlags_Logarithmic);
+	ImGui::SliderFloat("ColorScaler", &mUniformConstants.colorScaler, 10.0f, 0.001f, "%1.5f", ImGuiSliderFlags_Logarithmic);
 
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -215,6 +216,8 @@ void helloTriangle::drawFrame() {
 	vkWaitForFences(mDevice, 1, &mInFlightFences[mCurrentFrame], VK_TRUE, UINT64_MAX);
 
 	ImGuiWindowSetup();
+
+	memcpy(mUniformBufferMapped, &mUniformBuffer, sizeof(mUniformBuffer));
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -297,6 +300,7 @@ void helloTriangle::initVulkan() {
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
+	createUniformBuffers();
 	createImGuiPool();
 	createSwapChain();
 	createImageViews();
@@ -307,6 +311,14 @@ void helloTriangle::initVulkan() {
 	createCommandBuffer();
 	createSyncObjects();
 	createImGui();
+}
+
+void helloTriangle::createUniformBuffers() {
+	vkBindBufferMemory(mDevice, mUniformBuffer, mUniformBufferMemory, 0);
+
+	if (vkMapMemory(mDevice, mUniformBufferMemory, 0, sizeof(mUniformConstants), 0, &mUniformBufferMapped) != VK_SUCCESS) {
+		throw std::runtime_error("failed to map uniform buffer memory!");
+	}
 }
 
 void helloTriangle::createImGui() {
@@ -564,6 +576,61 @@ void helloTriangle::createRenderPass() {
 }
 
 void helloTriangle::createGraphicsPipeline() {
+	VkDescriptorSetLayoutBinding uboBinding{};
+	uboBinding.binding = 0;
+	uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboBinding.descriptorCount = 1;
+	uboBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layoutinfo{};
+	layoutinfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutinfo.bindingCount = 1;
+	layoutinfo.pBindings = &uboBinding;
+
+	if (vkCreateDescriptorSetLayout(mDevice, &layoutinfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create UBO descriptor layout!");
+	}
+
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.maxSets = 1;
+
+	if (vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create Descriptor Pool!");
+	}
+
+	VkDescriptorSetAllocateInfo allocInfo {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = mDescriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &mDescriptorSetLayout;
+	
+	if (vkAllocateDescriptorSets(mDevice, &allocInfo, &mDescriptorSet) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create Descriptor set!");
+	}
+
+	VkDescriptorBufferInfo bufferInfo{};
+	bufferInfo.buffer = mUniformBuffer; 
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(mUniformConstants);
+
+	VkWriteDescriptorSet descriptorWrite{};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = mDescriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pBufferInfo = &bufferInfo;
+
+	vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+
 	auto vertShaderCode                             = FileHelpers::readFile("shaders/vert.spv");
 	auto fragShaderCode                             = FileHelpers::readFile("shaders/frag.spv");
 
@@ -640,17 +707,13 @@ void helloTriangle::createGraphicsPipeline() {
 	dynamicState.dynamicStateCount                  = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates                     = dynamicStates.data();
 
-	VkPushConstantRange pushConstantRange{};
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(mFractalPushConstants);
-
+	
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
 	if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
@@ -805,8 +868,7 @@ void helloTriangle::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdPushConstants(commandBuffer, mPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(mFractalPushConstants), &mPushConstants);
-
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSet, 0, nullptr);
 
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 

@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 
+#include "doubleFloatMath.h"
 
 class helloTriangle {
 public:
@@ -33,9 +34,6 @@ public:
 
 
 private:
-	struct Vec2 {
-		float x, y;
-	};
 
 	struct mQueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -51,18 +49,22 @@ private:
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	struct mFractalPushConstants {
+	struct mFractalUniforms {
 		uint32_t MaxIterations;
 		uint32_t PlaneMode;
 		uint32_t ColorMode;
 		uint32_t FractalType;
+		
 		float ZoomLevel;
 		float colorScaler;
-		Vec2 C_Const;
-		Vec2 Z0_Const;
-		Vec2 X_Const;
-		Vec2 ScreenCenter;
-		Vec2 ScreenSize;
+		float ScreenSizeX;
+		float ScreenSizeY;
+
+		ComplexDD C_Const;
+		ComplexDD Z0_Const;
+		ComplexDD X_Const;
+		ComplexDD ScreenCenter;
+	
 	};
 
 	void mainLoop();
@@ -89,6 +91,7 @@ private:
 	void createCommandBuffer();
 	void createSyncObjects();
 	void createImGui();
+	void createUniformBuffers();
 	void cleanUp();
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	mSwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
@@ -135,17 +138,28 @@ private:
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
 	std::vector<VkSemaphore> mImageRenderFinishedSemaphores;
 
-	mFractalPushConstants mPushConstants = {
+	VkBuffer mUniformBuffer;
+	VkDescriptorSet mDescriptorSet;
+	VkDescriptorPool mDescriptorPool;
+	VkDeviceMemory mUniformBufferMemory;
+	void*          mUniformBufferMapped;
+	VkDescriptorSetLayout mDescriptorSetLayout;
+
+	mFractalUniforms mUniformConstants = {
 		.MaxIterations = 1000,
 		.PlaneMode = 0,
 		.ColorMode = 1,
 		.FractalType = 0,
+
 		.ZoomLevel = 2.5f,
-		.colorScaler = 0.03f,
+		.colorScaler = 30.0f,
+		.ScreenSizeX = 1.0f,
+		.ScreenSizeY = 1.0f,
+
 		.C_Const = { -0.75, 0.0 },
 		.Z0_Const = { 0.0, 0.0 },
 		.X_Const = { 2.0, 0.0 },
-		.ScreenCenter = { -0.75, 0.0 },
-		.ScreenSize = { (float) WIDTH, (float) HEIGHT }
+		.ScreenCenter = { -0.75, 0.0 }
 	};
+
 };
