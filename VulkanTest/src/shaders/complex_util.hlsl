@@ -1,59 +1,290 @@
-// [[vk::push_constant]]
-
-struct PushConstants
+struct doublefloat
 {
-    uint MaxIterations;
-    uint PlaneMode;
-    uint colorMode;
-    uint fractalType;
-    float ZoomLevel;
-    float colorScaler;
-    float2 C_Const;
-    float2 Z0_Const;
-    float2 X_Const;
-    float2 ScreenCenter;
-    float2 ScreenSize;
+    float high;
+    float low;
 };
+
+struct ComplexDD
+{
+    doublefloat Re;
+    doublefloat Im;
+};
+
+inline float df_to_float(doublefloat A)
+{
+    return A.high + A.low;
+}
+
+inline doublefloat two_prod_slow(float a, float b)
+{
+    float a_high = mad(a, 0x800001, 0); // 2^23 + 1
+    float a_low = a - a_high;
+    float b_high = mad(b, 0x800001, 0);
+    float b_low = b - b_high;
     
+    doublefloat res;
+    res.high = a * b;
+    res.low = (a_high * b_high - res.high) + (a_high * b_low) + (a_low * b_high) + (a_low * b_low);
+    return res;
+}
 
-struct Complex
+inline doublefloat two_sum(float a, float b)
 {
-    float Re;
-    float Im;
-};
+    doublefloat result;
+    result.high = a + b;
+    
+    float b_virtual = result.high - a;
+    float a_virtual = result.high - b_virtual;
+    
+    float b_err = b - b_virtual;
+    float a_err = a - a_virtual;
+    
+    result.low = a_err + b_err;
+    return result;
 
-Complex complex_mul(Complex a, Complex b)
+}
+
+inline doublefloat two_prod(float a, float b)
 {
-    Complex result;
-    result.Re = a.Re * b.Re - a.Im * b.Im;
-    result.Im = a.Re * b.Im + a.Im * b.Re;
+    doublefloat result;
+    result.high = a * b;
+    
+    result.low = mad(a, b, -result.high);
     return result;
 }
 
-Complex complex_exp(Complex z, Complex x)
+inline doublefloat quick_two_sum(float a, float b)
 {
-    float r_sqr = z.Re * z.Re + z.Im * z.Im;
+    doublefloat result;
+    result.high = a + b;
+    result.low = b - (result.high - a);
+    return result;
+}
+
+inline doublefloat df_neg(doublefloat A)
+{
+    A.high = -A.high;
+    A.low = -A.low;
+    return A;
+}
+
+inline doublefloat df_add(doublefloat Re, doublefloat Im)
+{
+    doublefloat S = two_sum(Re.high, Im.high);
     
-    if (r_sqr < 1e-10)
+    doublefloat T = two_sum(Re.low, Im.low);
+
+    doublefloat C = quick_two_sum(S.high, S.low + T.high);
+    doublefloat result;
+    result.high = C.high;
+    result.low = T.low + C.low;
+    
+    return quick_two_sum(result.high, result.low);
+}
+
+inline doublefloat df_sub(doublefloat A, doublefloat B)
+{
+    return df_add(A, df_neg(B));
+}
+
+inline doublefloat df_abs(doublefloat A)
+{
+    if (A.high < 0.0f)
     {
-        r_sqr = 1e-10;
+        return df_neg(A);
     }
+    return A;
+}
+
+inline doublefloat df_mul(doublefloat Re, doublefloat Im)
+{
+    doublefloat P = two_prod(Re.high, Im.high);
     
-    float mag = sqrt(r_sqr);
-    float arg = atan2(z.Im, z.Re);
+    float cross_prod = mad(Re.high, Im.low, P.low);
+    cross_prod = cross_prod + (Re.low * Im.high);
     
-    Complex logZ;
-    logZ.Re = log(mag);
-    logZ.Im = arg;
-    Complex w = complex_mul(x, logZ);
-    
-    float exp_w_re = exp(clamp(w.Re, -20.0, 20.0));    
-    
-    Complex result;
-    result.Re = exp_w_re * cos(w.Im);
-    result.Im = exp_w_re * sin(w.Im);
+    return quick_two_sum(P.high, cross_prod);
+}
+
+inline doublefloat df_from_float(float val)
+{
+    doublefloat result;
+    result.high = val;
+    result.low = 0.0;
     return result;
 }
+
+inline bool df_gt_float(doublefloat A, float b) // A > b
+{
+    if (A.high > b)
+        return true;
+    if (A.high < b)
+        return false;
+    return A.low > 0.0f;
+}
+
+inline bool df_lt_float(doublefloat A, float b) // A < b
+{
+    if (A.high < b)
+        return true;
+    if (A.high > b)
+        return false;
+    return A.low < 0.0f;
+}
+
+inline bool df_eq_float(doublefloat A, float b) // A == b
+{
+    return A.high == b && A.low == 0.0f;
+}
+
+inline doublefloat df_div(doublefloat A, doublefloat B)
+{
+    float q0_h = A.high / B.high;
+    doublefloat q0 = df_from_float(q0_h);
+    
+    doublefloat r = df_sub(A, df_mul(B, q0));
+    
+    float q1_h = r.high / B.high;
+    doublefloat q1 = df_from_float(q1_h);
+
+    return df_add(q0, q1); // q0 + q1
+}
+
+inline doublefloat df_sqrt(doublefloat A)
+{
+    if (A.high <= 0.0f)
+        return df_from_float(0.0f); // Sqrt of <= 0 is 0
+    
+    float guess_f = sqrt(A.high);
+    doublefloat X = df_from_float(guess_f);
+    
+    doublefloat onehalf = df_from_float(0.5f);
+    
+    X = df_mul(onehalf, df_add(X, df_div(A, X)));
+    X = df_mul(onehalf, df_add(X, df_div(A, X)));
+    X = df_mul(onehalf, df_add(X, df_div(A, X)));
+    
+    return X;
+}
+
+inline doublefloat df_log(doublefloat A)
+{
+    if (A.high <= 0.0f)
+        return df_from_float(-1.#INF);
+    
+    float log_high = log(A.high);
+    doublefloat x = df_div(A, df_from_float(A.high)); // x = (1 + A.l/A.h)
+    x = df_sub(x, df_from_float(1.0f)); // x = A.l/A.h
+    
+    return df_add(df_from_float(log_high), x);
+}
+
+inline doublefloat df_exp(doublefloat A)
+{
+    float exp_high = exp(A.high);
+    
+    // exp(A.l) ~= 1 + A.l
+    doublefloat exp_low = df_add(df_from_float(1.0f), df_from_float(A.low));
+    
+    return df_mul(df_from_float(exp_high), exp_low);
+}
+
+inline doublefloat df_cos(doublefloat A)
+{
+    float cos_high = cos(A.high);
+    float sin_high = sin(A.high);
+    
+    // cos(A.l) ~= 1
+    // sin(A.l) ~= A.l
+    
+    // result = cos_high * 1 - sin_high * A.l
+    doublefloat term1 = df_from_float(cos_high);
+    doublefloat term2 = df_mul(df_from_float(sin_high), df_from_float(A.low));
+    
+    return df_sub(term1, term2);
+}
+
+inline doublefloat df_sin(doublefloat A)
+{
+    float cos_high = cos(A.high);
+    float sin_high = sin(A.high);
+    
+    // cos(A.l) ~= 1
+    // sin(A.l) ~= A.l
+
+    // result = sin_high * 1 + cos_high * A.l
+    doublefloat term1 = df_from_float(sin_high);
+    doublefloat term2 = df_mul(df_from_float(cos_high), df_from_float(A.low));
+    
+    return df_add(term1, term2);
+}
+
+inline doublefloat complex_df_mag_sqr(ComplexDD A)
+{
+    doublefloat Re_sqr = df_mul(A.Re, A.Re);
+    doublefloat Im_sqr = df_mul(A.Im, A.Im);
+    return df_add(Re_sqr, Im_sqr);
+}
+
+inline ComplexDD complex_df_add(ComplexDD A, ComplexDD B)
+{
+    ComplexDD result;
+    result.Re = df_add(A.Re, B.Re);
+    result.Im = df_add(A.Im, B.Im);
+    return result;
+}
+
+inline ComplexDD complex_df_mul(ComplexDD A, ComplexDD B)
+{
+    doublefloat Re_Re = df_mul(A.Re, B.Re);
+    doublefloat Im_Im = df_mul(A.Im, B.Im);
+    doublefloat Re_Im = df_mul(A.Re, B.Im);
+    doublefloat Im_Re = df_mul(A.Im, B.Re);
+    
+    ComplexDD result;
+    
+    // result.Re = Re_Re - Im_Im
+    result.Re = df_sub(Re_Re, Im_Im);
+    // result.Im = Re_Im + Im_Re
+    result.Im = df_add(Re_Im, Im_Re);
+    
+    return result;
+}
+
+inline ComplexDD complex_df_neg(ComplexDD A)
+{
+    ComplexDD result;
+    result.Re = df_neg(A.Re);
+    result.Im = df_neg(A.Im);
+    return result;
+}
+
+inline ComplexDD complex_df_conjugate(ComplexDD A)
+{
+    ComplexDD result;
+    result.Re = A.Re;
+    result.Im = df_neg(A.Im); // Only negate imaginary part
+    return result;
+}
+
+inline ComplexDD complex_df_exp(ComplexDD A, ComplexDD B)
+{
+    doublefloat Re_Re = df_mul(A.Re, B.Re);
+    doublefloat Im_Im = df_mul(A.Im, B.Im);
+    doublefloat Re_Im = df_mul(A.Re, B.Im);
+    doublefloat Im_Re = df_mul(A.Im, B.Re);
+    
+    ComplexDD result;
+    
+    Im_Im.high = -Im_Im.high;
+    Im_Im.low = -Im_Im.low;
+    result.Re = df_add(Re_Re, Im_Im);
+    
+    result.Im = df_add(Re_Im, Im_Re);
+    
+    return result;
+}
+
 
 float3 catmull_rom(float3 p0, float3 p1, float3 p2, float3 p3, float t)
 {

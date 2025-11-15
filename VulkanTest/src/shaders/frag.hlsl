@@ -1,54 +1,72 @@
 #include "complex_util.hlsl"
 
-[[vk::push_constant]]
-PushConstants params;
+cbuffer params : register(b0, space0)
+{
+    uint MaxIterations;
+    uint PlaneMode;
+    uint ColorMode;
+    uint FractalType;
+		
+    float ZoomLevel;
+    float colorScaler;
+    float ScreenSizeX;
+    float ScreenSizeY;
+
+    ComplexDD C_Const;
+    ComplexDD Z0_Const;
+    ComplexDD X_Const;
+    ComplexDD ScreenCenter;
+	
+};
 
 struct PSInput
 {
     float4 position : SV_POSITION;
-    float3 color    : COLOR;
 };
 
 
 float4 main(PSInput input) : SV_TARGET
 {
+    float colorScaler = colorScaler;
     
-    float mapped_x = ((input.position.x / params.ScreenSize.x) * 2.0) - 1.0;
-    float mapped_y = ((input.position.y / params.ScreenSize.y) * 2.0) - 1.0;
+    doublefloat mapped_x = df_from_float(((input.position.x / ScreenSizeX) * 2.0) - 1.0);
+    doublefloat mapped_y = df_from_float(((input.position.y / ScreenSizeY) * 2.0) - 1.0);
     
-    Complex Varying_Param;
+    float aspectRatio = (ScreenSizeX / ScreenSizeY);
     
-    Varying_Param.Re = mapped_x * params.ZoomLevel * (params.ScreenSize.x / params.ScreenSize.y) + params.ScreenCenter.x;
-    Varying_Param.Im = mapped_y * params.ZoomLevel + params.ScreenCenter.y;
+    ComplexDD Varying_Param;
+    
+    Varying_Param.Re = df_add(df_mul(mapped_x, df_from_float(ZoomLevel)), df_mul(df_from_float(aspectRatio), ScreenCenter.Re));
+    Varying_Param.Im = df_add(df_mul(mapped_y, df_from_float(ZoomLevel)), ScreenCenter.Im);
 
     
-    Complex Zn;
-    Complex Cp;
-    Complex Xp;
+    ComplexDD Zn;
+    ComplexDD Cp;
+    ComplexDD Xp;
     
 
-    if (params.PlaneMode == 0)
+    if (PlaneMode == 0)
     {
-        Zn.Re = params.Z0_Const.x;
-        Zn.Im = params.Z0_Const.y;
+        Zn.Re = Z0_Const.Re;
+        Zn.Im = Z0_Const.Im;
         Cp = Varying_Param;
-        Xp.Re = params.X_Const.x;
-        Xp.Im = params.X_Const.y;
+        Xp.Re = X_Const.Re;
+        Xp.Im = X_Const.Im;
     }
-    else if (params.PlaneMode == 1)
+    else if (PlaneMode == 1)
     {
         Zn = Varying_Param;
-        Cp.Re = params.C_Const.x;
-        Cp.Im = params.C_Const.y;
-        Xp.Re = params.X_Const.x;
-        Xp.Im = params.X_Const.y;
+        Cp.Re = C_Const.Re;
+        Cp.Im = C_Const.Im;
+        Xp.Re = X_Const.Re;
+        Xp.Im = X_Const.Im;
     }
-    else if (params.PlaneMode == 2)
+    else if (PlaneMode == 2)
     {
-        Zn.Re = params.Z0_Const.x;
-        Zn.Im = params.Z0_Const.y;
-        Cp.Re = params.C_Const.x;
-        Cp.Im = params.C_Const.y;
+        Zn.Re = Z0_Const.Re;
+        Zn.Im = Z0_Const.Im;
+        Cp.Re = C_Const.Re;
+        Cp.Im = C_Const.Im;
         Xp = Varying_Param;
     }
     else
@@ -56,96 +74,96 @@ float4 main(PSInput input) : SV_TARGET
         return float4(1.0, 1.0, 1.0, 1.0);
     }
     
-    if (Zn.Re == 0.0 && Zn.Im == 0.0)
+    if (df_eq_float(Zn.Re, 0.0) && df_eq_float(Zn.Im, 0.0))
     {
-        Zn.Re = 0.000001f;
+        Zn.Re = df_from_float(0.000001f);
     }
     
-    uint iterations = params.MaxIterations;
-    for (uint i = 0; i < params.MaxIterations; i++)
+    uint iterations = MaxIterations;
+    for (uint i = 0; i < MaxIterations; i++)
     {
+        ComplexDD Z2 = complex_df_mul(Zn, Zn);
         
-        if ((Zn.Re * Zn.Re + Zn.Im * Zn.Im) > 4.0)
+        if (df_gt_float(df_add(Z2.Re, Z2.Im), 250.0))
         {
             iterations = i;
             break;
         }
-        if (params.PlaneMode != 2)
+        if (PlaneMode != 2)
         {
-            if (params.fractalType == 0)
+            if (FractalType == 0)
             {
-                Zn = complex_exp(Zn, Xp);
+                Zn = complex_df_exp(Zn, Xp);
             }
-            else if (params.fractalType == 1)
+            else if (FractalType == 1)
             {
-                Zn.Im = -Zn.Im;
-                Zn = complex_exp(Zn, Xp);
+                Zn.Im = df_neg(Zn.Im);
+                Zn = complex_df_exp(Zn, Xp);
             }
-            else if (params.fractalType == 2)
+            else if (FractalType == 2)
             {
-                Complex Zn_abs;
-                Zn_abs.Re = abs(Zn.Re);
-                Zn_abs.Im = abs(Zn.Im);
-                Zn = complex_exp(Zn_abs, Xp);
+                ComplexDD Zn_abs;
+                Zn_abs.Re = df_abs(Zn.Re);
+                Zn_abs.Im = df_abs(Zn.Im);
+                Zn = complex_df_exp(Zn_abs, Xp);
             }
         }
         else
         {
-            if (Xp.Re == 2 && Xp.Im == 0)
+            if (df_eq_float(Xp.Re, 2.0) && df_eq_float(Xp.Im, 0.0))
             {
-                if (params.fractalType == 0)
+                if (FractalType == 0)
                 {
-                    Zn = complex_mul(Zn, Zn);
+                    Zn = complex_df_mul(Zn, Zn);
                 }
-                else if (params.fractalType == 1)
+                else if (FractalType == 1)
                 {
-                    Zn.Im = -Zn.Im;
-                    Zn = complex_mul(Zn, Zn);
+                    Zn.Im = df_neg(Zn.Im);
+                    Zn = complex_df_mul(Zn, Zn);
                 }
-                else if (params.fractalType == 2)
+                else if (FractalType == 2)
                 {
-                    Complex Zn_abs;
-                    Zn_abs.Re = abs(Zn.Re);
-                    Zn_abs.Im = abs(Zn.Im);
-                    Zn = complex_mul(Zn_abs, Zn_abs);
+                    ComplexDD Zn_abs;
+                    Zn_abs.Re = df_abs(Zn.Re);
+                    Zn_abs.Im = df_abs(Zn.Im);
+                    Zn = complex_df_mul(Zn_abs, Zn_abs);
                 }
             }
         }
        
-        Zn.Re += Cp.Re;
-        Zn.Im += Cp.Im;
+        Zn = complex_df_add(Zn, Cp);
         
     }
 
-    if (iterations != params.MaxIterations)
+    if (iterations != MaxIterations)
     {
-        float mag_Z = sqrt(Zn.Re * Zn.Re + Zn.Im * Zn.Im);
-        float mag_X_sqr = Xp.Re * Xp.Re + Xp.Im * Xp.Im;
+        float mag_Z = sqrt(df_to_float(df_mul(Zn.Re, Zn.Re)) + df_to_float(df_mul(Zn.Im, Zn.Im)));
+        float mag_X_sqr = df_to_float(df_mul(Xp.Re, Xp.Re)) + df_to_float(df_mul(Xp.Im, Xp.Im));
 		
         float mu = float(iterations) + 1.0 - log(log(mag_Z)) / log(sqrt(max(0.000001f, mag_X_sqr)));
         
         
-        if (params.colorMode == 0)
+        if (ColorMode == 0)
         {
         
-            float r = 0.5 + 0.5 * cos(mu * params.colorScaler + 0.0);
-            float g = 0.5 + 0.5 * cos(mu * params.colorScaler + 2.0);
-            float b = 0.5 + 0.5 * cos(mu * params.colorScaler + 4.0);
+            float r = 0.5 + 0.5 * cos(mu * colorScaler + 0.0);
+            float g = 0.5 + 0.5 * cos(mu * colorScaler + 2.0);
+            float b = 0.5 + 0.5 * cos(mu * colorScaler + 4.0);
 
             return float4(r, g, b, 1.0);
         }
-        else if (params.colorMode == 1)
+        else if (ColorMode == 1)
         {
-            float hue = frac(mu * params.colorScaler);
+            float hue = frac(mu * colorScaler);
             float sat = 1.0;
             float val = 1.0;
 
             float3 rgb = hsv_to_rgb(float3(hue, sat, val));
             return float4(rgb, 1.0);
         }
-        else if (params.colorMode == 2)
+        else if (ColorMode == 2)
         {
-            float t = frac(mu * params.colorScaler);
+            float t = frac(mu * colorScaler);
             float3 rgb = palette_lerp(t);
             return float4(rgb, 1.0);
         }
