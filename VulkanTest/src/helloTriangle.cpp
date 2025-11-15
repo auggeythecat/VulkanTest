@@ -217,7 +217,7 @@ void helloTriangle::drawFrame() {
 
 	ImGuiWindowSetup();
 
-	memcpy(mUniformBufferMapped, &mUniformBuffer, sizeof(mUniformBuffer));
+	memcpy(mUniformBufferMapped, &mUniformConstants, sizeof(mUniformConstants));
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -278,6 +278,8 @@ void helloTriangle::cleanUp() {
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+	vkDestroyBuffer(mDevice, mUniformBuffer, nullptr);
+	
 	vkDestroyDescriptorPool(mDevice, mImGuiDescriptorPool, nullptr);
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 	for (auto framebuffer : mSwapChainFramebuffers) { vkDestroyFramebuffer(mDevice, framebuffer, nullptr); }
@@ -314,12 +316,42 @@ void helloTriangle::initVulkan() {
 }
 
 void helloTriangle::createUniformBuffers() {
-	vkBindBufferMemory(mDevice, mUniformBuffer, mUniformBufferMemory, 0);
+	VkDeviceSize bufferSize = sizeof(mUniformConstants);
 
-	if (vkMapMemory(mDevice, mUniformBufferMemory, 0, sizeof(mUniformConstants), 0, &mUniformBufferMapped) != VK_SUCCESS) {
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = bufferSize;
+	bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &mUniformBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create uniform buffer!");
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(mDevice, mUniformBuffer, &memRequirements);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &mUniformBufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate uniform buffer memory!");
+	}
+
+	if (vkBindBufferMemory(mDevice, mUniformBuffer, mUniformBufferMemory, 0) != VK_SUCCESS) {
+		throw std::runtime_error("failed to bind uniform buffer memory!");
+	}
+
+	if (vkMapMemory(mDevice, mUniformBufferMemory, 0, bufferSize, 0, &mUniformBufferMapped) != VK_SUCCESS) {
 		throw std::runtime_error("failed to map uniform buffer memory!");
 	}
+
+	memcpy(mUniformBufferMapped, &mUniformConstants, sizeof(mUniformConstants));
 }
+
 
 void helloTriangle::createImGui() {
 
