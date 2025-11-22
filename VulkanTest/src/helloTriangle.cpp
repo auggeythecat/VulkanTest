@@ -50,7 +50,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 void helloTriangle::run() {
-	ImGui::CreateContext();
 	initWindow();
 	initVulkan();
 	mainLoop();
@@ -133,7 +132,7 @@ void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
 
 	float oldZoom = mUniformConstants.ZoomLevel;
 
-	double zoomFactor = 1.1;
+	float zoomFactor = 1.1;
 	
 	
 	if (yoffset > 0) {
@@ -188,16 +187,10 @@ void helloTriangle::ImGuiWindowSetup() {
 
 	ImGui::SliderFloat("Zoom", &mUniformConstants.ZoomLevel, 3.0f, 0.0001f);
 	ImGui::SliderInt("Max Iterations", (int*)&mUniformConstants.MaxIterations, 10, 2500);
-
-	ImGui::DragFloat("Screen Center Real", (float*)&mUniformConstants.ScreenCenter.Re.high, 0.001f);
-	ImGui::DragFloat("C_Const Real", (float*)&mUniformConstants.C_Const.Re.high, 0.001f);
-	ImGui::DragFloat("Z0_Const Real", (float*)&mUniformConstants.Z0_Const.Re.high, 0.001f);
-	ImGui::DragFloat("X_Const Real", (float*)&mUniformConstants.X_Const.Re.high, 0.001f);
-
-	ImGui::DragFloat("Screen Center Imaginary", (float*)&mUniformConstants.ScreenCenter.Im.high, 0.001f);
-	ImGui::DragFloat("C_Const Imaginary", (float*)&mUniformConstants.C_Const.Im.high, 0.001f);
-	ImGui::DragFloat("Z0_Const Imaginary", (float*)&mUniformConstants.Z0_Const.Im.high, 0.001f);
-	ImGui::DragFloat("X_Const Imaginary", (float*)&mUniformConstants.X_Const.Im.high, 0.001f);
+	ImGui::DragFloat2("Screen Center", (float*)&mUniformConstants.ScreenCenter, 0.001f);
+	ImGui::DragFloat2("C_Const", (float*)&mUniformConstants.C_Const, 0.001f);
+	ImGui::DragFloat2("Z0_Const", (float*)&mUniformConstants.Z0_Const, 0.001f);
+	ImGui::DragFloat2("X_Const", (float*)&mUniformConstants.X_Const, 0.001f);
 
 	const char* PlaneModes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
 	ImGui::Combo("Plane Mode", (int*)&mUniformConstants.PlaneMode, PlaneModes, 3);
@@ -224,7 +217,7 @@ void helloTriangle::drawFrame() {
 
 	ImGuiWindowSetup();
 
-	memcpy(mUniformBufferMapped, &mUniformConstants, sizeof(mUniformConstants));
+	memcpy(mUniformBufferMapped, &mUniformBuffer, sizeof(mUniformBuffer));
 
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -285,10 +278,6 @@ void helloTriangle::cleanUp() {
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
-	vkDestroyBuffer(mDevice, mUniformBuffer, nullptr);
-	vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
-	vkFreeMemory(mDevice, mUniformBufferMemory, nullptr);
 	vkDestroyDescriptorPool(mDevice, mImGuiDescriptorPool, nullptr);
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 	for (auto framebuffer : mSwapChainFramebuffers) { vkDestroyFramebuffer(mDevice, framebuffer, nullptr); }
@@ -325,50 +314,16 @@ void helloTriangle::initVulkan() {
 }
 
 void helloTriangle::createUniformBuffers() {
-	//FIXME: CHEAT
+	vkBindBufferMemory(mDevice, mUniformBuffer, mUniformBufferMemory, 0);
 
-	mUniformConstants.ScreenSizeX = static_cast<float>(WIDTH);
-	mUniformConstants.ScreenSizeY = static_cast<float>(HEIGHT);
-	
-	VkDeviceSize bufferSize = sizeof(mUniformConstants);
-
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = bufferSize;
-	bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	if (vkCreateBuffer(mDevice, &bufferInfo, nullptr, &mUniformBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create uniform buffer!");
-	}
-
-	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(mDevice, mUniformBuffer, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &mUniformBufferMemory) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate uniform buffer memory!");
-	}
-
-	if (vkBindBufferMemory(mDevice, mUniformBuffer, mUniformBufferMemory, 0) != VK_SUCCESS) {
-		throw std::runtime_error("failed to bind uniform buffer memory!");
-	}
-
-	if (vkMapMemory(mDevice, mUniformBufferMemory, 0, bufferSize, 0, &mUniformBufferMapped) != VK_SUCCESS) {
+	if (vkMapMemory(mDevice, mUniformBufferMemory, 0, sizeof(mUniformConstants), 0, &mUniformBufferMapped) != VK_SUCCESS) {
 		throw std::runtime_error("failed to map uniform buffer memory!");
 	}
-
-	memcpy(mUniformBufferMapped, &mUniformConstants, sizeof(mUniformConstants));
 }
-
 
 void helloTriangle::createImGui() {
 
+	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
