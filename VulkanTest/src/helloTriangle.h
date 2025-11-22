@@ -8,6 +8,8 @@
 
 #include "doubleFloatMath.h"
 
+#include <vulkan/vulkan_core.h>
+
 class helloTriangle {
 public:
 
@@ -25,7 +27,7 @@ public:
 	};
 
 #ifndef NDEBUG
-	const bool enableValidationLayers = true;
+	const bool enableValidationLayers = false;
 #else
 	const bool enableValidationLayers = false;
 #endif // !NDEBUG
@@ -146,20 +148,20 @@ private:
 	VkDescriptorSetLayout mDescriptorSetLayout;
 
 	mFractalUniforms mUniformConstants = {
-		.MaxIterations = 1000,
-		.PlaneMode = 0,
-		.ColorMode = 1,
-		.FractalType = 0,
+		.MaxIterations = 1000, // 0
+		.PlaneMode = 0, // 4
+		.ColorMode = 1, // 8
+		.FractalType = 0, // 12
 
-		.ZoomLevel = 2.5f,
-		.colorScaler = 30.0f,
-		.ScreenSizeX = 1.0f,
-		.ScreenSizeY = 1.0f,
+		.ZoomLevel = 2.5f, // 16
+		.colorScaler = 5.0f, // 20
+		.ScreenSizeX = 1.0f, // 24
+		.ScreenSizeY = 1.0f, // 28
 
-		.C_Const = { -0.75, 0.0 },
-		.Z0_Const = { 0.0, 0.0 },
-		.X_Const = { 2.0, 0.0 },
-		.ScreenCenter = { -0.75, 0.0 }
+		.C_Const = { df_from_float(-0.75f), 0.0, 0.0, df_from_float(0.0f) }, //32 - 48
+		.Z0_Const = { df_from_float(0.0f), 0.0, 0.0, df_from_float(0.0f) }, //64 - 80
+		.X_Const = { df_from_float(2.0f), 0.0, 0.0, df_from_float(0.0f) }, //96 - 112 
+		.ScreenCenter = { df_from_float(-0.75f), 0.0, 0.0, df_from_float(0.0f) } //128 - 144
 	};
 
 };

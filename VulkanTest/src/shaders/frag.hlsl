@@ -26,9 +26,7 @@ struct PSInput
 
 
 float4 main(PSInput input) : SV_TARGET
-{
-    float colorScaler = colorScaler;
-    
+{        
     doublefloat mapped_x = df_from_float(((input.position.x / ScreenSizeX) * 2.0) - 1.0);
     doublefloat mapped_y = df_from_float(((input.position.y / ScreenSizeY) * 2.0) - 1.0);
     
@@ -36,7 +34,7 @@ float4 main(PSInput input) : SV_TARGET
     
     ComplexDD Varying_Param;
     
-    Varying_Param.Re = df_add(df_mul(mapped_x, df_from_float(ZoomLevel)), df_mul(df_from_float(aspectRatio), ScreenCenter.Re));
+    Varying_Param.Re = df_add(df_mul(df_mul(mapped_x, df_from_float(ZoomLevel)), df_from_float(aspectRatio)), ScreenCenter.Re);
     Varying_Param.Im = df_add(df_mul(mapped_y, df_from_float(ZoomLevel)), ScreenCenter.Im);
 
     
@@ -82,9 +80,8 @@ float4 main(PSInput input) : SV_TARGET
     uint iterations = MaxIterations;
     for (uint i = 0; i < MaxIterations; i++)
     {
-        ComplexDD Z2 = complex_df_mul(Zn, Zn);
         
-        if (df_gt_float(df_add(Z2.Re, Z2.Im), 250.0))
+        if (df_gt_float(complex_df_mag_sqr(Zn), 250.0))
         {
             iterations = i;
             break;
@@ -127,6 +124,26 @@ float4 main(PSInput input) : SV_TARGET
                     Zn_abs.Re = df_abs(Zn.Re);
                     Zn_abs.Im = df_abs(Zn.Im);
                     Zn = complex_df_mul(Zn_abs, Zn_abs);
+                }
+            }
+            else
+            {
+                if (FractalType == 0)
+                {
+                    Zn = complex_df_exp(Zn, Xp);
+                }
+                else if (FractalType == 1)
+                {
+                    Zn.Im = df_neg(Zn.Im);
+                    Zn = complex_df_exp(Zn, Xp);
+                }
+                else if (FractalType == 2)
+                {
+                    ComplexDD Zn_abs;
+                    Zn_abs.Re = df_abs(Zn.Re);
+                    Zn_abs.Im = df_abs(Zn.Im);
+                    Zn = complex_df_exp(Zn, Xp);
+
                 }
             }
         }

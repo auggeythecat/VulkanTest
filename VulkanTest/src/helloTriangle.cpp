@@ -50,6 +50,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 void helloTriangle::run() {
+	ImGui::CreateContext();
 	initWindow();
 	initVulkan();
 	mainLoop();
@@ -132,7 +133,7 @@ void helloTriangle::onMouseScroll(double xoffset, double yoffset) {
 
 	float oldZoom = mUniformConstants.ZoomLevel;
 
-	float zoomFactor = 1.1;
+	double zoomFactor = 1.1;
 	
 	
 	if (yoffset > 0) {
@@ -187,10 +188,16 @@ void helloTriangle::ImGuiWindowSetup() {
 
 	ImGui::SliderFloat("Zoom", &mUniformConstants.ZoomLevel, 3.0f, 0.0001f);
 	ImGui::SliderInt("Max Iterations", (int*)&mUniformConstants.MaxIterations, 10, 2500);
-	ImGui::DragFloat2("Screen Center", (float*)&mUniformConstants.ScreenCenter, 0.001f);
-	ImGui::DragFloat2("C_Const", (float*)&mUniformConstants.C_Const, 0.001f);
-	ImGui::DragFloat2("Z0_Const", (float*)&mUniformConstants.Z0_Const, 0.001f);
-	ImGui::DragFloat2("X_Const", (float*)&mUniformConstants.X_Const, 0.001f);
+
+	ImGui::DragFloat("Screen Center Real", (float*)&mUniformConstants.ScreenCenter.Re.high, 0.001f);
+	ImGui::DragFloat("C_Const Real", (float*)&mUniformConstants.C_Const.Re.high, 0.001f);
+	ImGui::DragFloat("Z0_Const Real", (float*)&mUniformConstants.Z0_Const.Re.high, 0.001f);
+	ImGui::DragFloat("X_Const Real", (float*)&mUniformConstants.X_Const.Re.high, 0.001f);
+
+	ImGui::DragFloat("Screen Center Imaginary", (float*)&mUniformConstants.ScreenCenter.Im.high, 0.001f);
+	ImGui::DragFloat("C_Const Imaginary", (float*)&mUniformConstants.C_Const.Im.high, 0.001f);
+	ImGui::DragFloat("Z0_Const Imaginary", (float*)&mUniformConstants.Z0_Const.Im.high, 0.001f);
+	ImGui::DragFloat("X_Const Imaginary", (float*)&mUniformConstants.X_Const.Im.high, 0.001f);
 
 	const char* PlaneModes[] = { "Mandelbrot (C Plane)", "Julia (Z Plane)", "Exponent (X Plane)" };
 	ImGui::Combo("Plane Mode", (int*)&mUniformConstants.PlaneMode, PlaneModes, 3);
@@ -279,7 +286,9 @@ void helloTriangle::cleanUp() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	vkDestroyBuffer(mDevice, mUniformBuffer, nullptr);
-	
+	vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
+	vkFreeMemory(mDevice, mUniformBufferMemory, nullptr);
 	vkDestroyDescriptorPool(mDevice, mImGuiDescriptorPool, nullptr);
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 	for (auto framebuffer : mSwapChainFramebuffers) { vkDestroyFramebuffer(mDevice, framebuffer, nullptr); }
@@ -316,6 +325,11 @@ void helloTriangle::initVulkan() {
 }
 
 void helloTriangle::createUniformBuffers() {
+	//FIXME: CHEAT
+
+	mUniformConstants.ScreenSizeX = static_cast<float>(WIDTH);
+	mUniformConstants.ScreenSizeY = static_cast<float>(HEIGHT);
+	
 	VkDeviceSize bufferSize = sizeof(mUniformConstants);
 
 	VkBufferCreateInfo bufferInfo{};
@@ -355,7 +369,6 @@ void helloTriangle::createUniformBuffers() {
 
 void helloTriangle::createImGui() {
 
-	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;

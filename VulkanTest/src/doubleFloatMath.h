@@ -9,6 +9,8 @@ struct doublefloat {
 
 struct ComplexDD {
     doublefloat Re;
+    float _pad0;
+	float _pad1;
     doublefloat Im;
 };
 
@@ -24,12 +26,10 @@ inline doublefloat two_sum(float a, float b)
     return result;
 }
 
-// Performs 'a * b' and returns the product AND the error.
 inline doublefloat two_prod(float a, float b)
 {
     doublefloat result;
     result.high = a * b;
-    // std::fmaf is the C++ version of HLSL's fma() for floats
     result.low = std::fmaf(a, b, -result.high);
     return result;
 }

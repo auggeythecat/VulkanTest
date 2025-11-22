@@ -7,6 +7,8 @@ struct doublefloat
 struct ComplexDD
 {
     doublefloat Re;
+    float _pad0;
+    float _pad1;
     doublefloat Im;
 };
 
@@ -17,9 +19,9 @@ inline float df_to_float(doublefloat A)
 
 inline doublefloat two_prod_slow(float a, float b)
 {
-    float a_high = mad(a, 0x800001, 0); // 2^23 + 1
+    float a_high = mad(a, 8388609.0, 0); // 2^23 + 1
     float a_low = a - a_high;
-    float b_high = mad(b, 0x800001, 0);
+    float b_high = mad(b, 8388609.0, 0);
     float b_low = b - b_high;
     
     doublefloat res;
@@ -267,20 +269,32 @@ inline ComplexDD complex_df_conjugate(ComplexDD A)
     return result;
 }
 
-inline ComplexDD complex_df_exp(ComplexDD A, ComplexDD B)
+inline ComplexDD complex_df_exp(ComplexDD X, ComplexDD Z)
 {
-    doublefloat Re_Re = df_mul(A.Re, B.Re);
-    doublefloat Im_Im = df_mul(A.Im, B.Im);
-    doublefloat Re_Im = df_mul(A.Re, B.Im);
-    doublefloat Im_Re = df_mul(A.Im, B.Re);
+    // 1. log(Z) = log|Z| + i*arg(Z)
+    doublefloat mag_sqr = complex_df_mag_sqr(Z);
+    doublefloat mag = df_sqrt(mag_sqr);
+    doublefloat log_mag = df_log(mag);
+    
+    // arg(Z) = atan2(Z.im, Z.re)
+    float arg_Z_f = atan2(Z.Im.high, Z.Re.high);
+    doublefloat arg_Z = df_from_float(arg_Z_f);
+    
+    ComplexDD log_Z;
+    log_Z.Re = log_mag;
+    log_Z.Im = arg_Z;
+    
+    // 2. X * log(Z)
+    ComplexDD W = complex_df_mul(X, log_Z);
+    
+    // 3. exp(W) = exp(W.re) * (cos(W.im) + i*sin(W.im))
+    doublefloat exp_W_re = df_exp(W.Re);
+    doublefloat cos_W_im = df_cos(W.Im);
+    doublefloat sin_W_im = df_sin(W.Im);
     
     ComplexDD result;
-    
-    Im_Im.high = -Im_Im.high;
-    Im_Im.low = -Im_Im.low;
-    result.Re = df_add(Re_Re, Im_Im);
-    
-    result.Im = df_add(Re_Im, Im_Re);
+    result.Re = df_mul(exp_W_re, cos_W_im);
+    result.Im = df_mul(exp_W_re, sin_W_im);
     
     return result;
 }

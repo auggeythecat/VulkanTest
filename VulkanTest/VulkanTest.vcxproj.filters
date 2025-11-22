@@ -80,7 +80,7 @@
     <ClInclude Include="src\helloTriangle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="doubleFloatMath.h">
+    <ClInclude Include="src\doubleFloatMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
