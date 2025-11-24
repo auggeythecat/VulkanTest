@@ -1,10 +1,11 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "Windows.h"
+
 
 #include <vector>
 #include <optional>
+#include <vulkan/vulkan_core.h>
 
 
 class helloTriangle {
@@ -103,13 +104,10 @@ private:
 	void createLogicalDevice();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	bool mIsDragging = false;
-	double mLastMouseX = 0.0;
-	double mLastMouseY = 0.0;
+	
 
 
 	VkDevice mDevice;
-	GLFWwindow* mWindow;
 	VkInstance mInstance;
 	VkSurfaceKHR mSurface;
 	VkQueue mPresentQueue;

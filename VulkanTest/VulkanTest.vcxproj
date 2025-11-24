@@ -189,6 +189,7 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Device.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_vulkan.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -198,14 +199,17 @@
     <ClCompile Include="src\FileHelpers.cpp" />
     <ClCompile Include="src\helloTriangle.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Device.h" />
     <ClInclude Include="imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="imgui\backends\imgui_impl_vulkan.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="src\FileHelpers.h" />
     <ClInclude Include="src\helloTriangle.h" />
+    <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\complex_util.hlsl">
